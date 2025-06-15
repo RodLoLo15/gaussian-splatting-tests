@@ -132,7 +132,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Se inserta la incertidumbre U(t)
         beta = 0.3
 
-        U_t = GaussianModel.calculate_uncertainty().detach()
+        U_t = gaussians.calculate_uncertainty().detach()
         lambda_t = 1 - torch.exp(-beta * U_t)
         lambda_t = torch.clamp(lambda_t, min = 0.0, max = 1.0)
         u_t_list.append(U_t.item())
