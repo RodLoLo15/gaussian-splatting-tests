@@ -183,7 +183,7 @@ class GaussianModel:
             torch.Tensor: A single scalar representing global model uncertainty.
         """
         scaling = self.get_scaling          # (N, 3)
-        opacity = self.get_opacity(         # (N, 1)
+        opacity = self.get_opacity         # (N, 1)
         xyz = self.get_xyz                  # (N, 3)
 
         scale_norm = torch.norm(scaling, dim=1, keepdim=True)  # (N, 1)
