@@ -175,6 +175,38 @@ class GaussianModel:
         exposure = torch.eye(3, 4, device="cuda")[None].repeat(len(cam_infos), 1, 1)
         self._exposure = nn.Parameter(exposure.requires_grad_(True))
 
+    def calculate_uncertainty(self):
+        """
+        Calculates a global uncertainty metric U(t) for the whole Gaussian model.
+
+        Returns:
+            torch.Tensor: A single scalar representing global model uncertainty.
+        """
+        scaling = self.get_scaling()          # (N, 3)
+        opacity = self.get_opacity()          # (N, 1)
+        xyz = self.get_xyz()                  # (N, 3)
+
+        scale_norm = torch.norm(scaling, dim=1, keepdim=True)  # (N, 1)
+        density_var = torch.var(xyz, dim=0, keepdim=True)       # (1, 3)
+        density_var = density_var.expand(xyz.shape[0], -1)      # (N, 3)
+
+        mu_sigma = torch.mean(scale_norm)
+        sigma_sigma = torch.std(scale_norm)
+        mu_alpha = torch.mean(opacity)
+        sigma_alpha = torch.std(opacity)
+        mu_rho = torch.mean(density_var)
+        sigma_rho = torch.std(density_var)
+
+        eps = 1e-6
+
+        uncertainty = (1 / scale_norm.shape[0]) * torch.sum(
+            ((scale_norm - mu_sigma) / (sigma_sigma + eps)) +
+            (((1 - opacity) - mu_alpha) / (sigma_alpha + eps)) +
+            ((density_var - mu_rho) / (sigma_rho + eps))
+        )
+
+        return uncertainty
+
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
         self.xyz_gradient_accum = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
