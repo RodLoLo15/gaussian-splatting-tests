@@ -303,6 +303,11 @@ if __name__ == "__main__":
     opt = op.extract(args)
     pp_args = pp.extract(args)
 
+    opt.iterations = 5000  # Limita el número de iteraciones reales
+    opt.position_lr_max_steps = 5000  # Asegura que el LR se reduzca correctamente
+    args.test_iterations = [opt.iterations]      # Solo evalúa al final
+    args.save_iterations = [opt.iterations]      # Solo guarda al final
+
     # Ejecutar entrenamiento y obtener listas de U(t) y lambda_t
     u_t_list, lambda_t_list = training(
     lp_args,
