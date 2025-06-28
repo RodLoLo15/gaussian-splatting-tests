@@ -348,6 +348,6 @@ if __name__ == "__main__":
 
     # Guardar gráfico como imagen
     plt.tight_layout()
-    plt.savefig(os.path.join(opt.model_path, "uncertainty_lambda_plot.png"))
+    plt.savefig(os.path.join(args.model_path, "uncertainty_lambda_plot.png"))
     plt.close()
 
