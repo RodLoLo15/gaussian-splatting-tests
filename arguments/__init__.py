@@ -46,6 +46,7 @@ class ParamGroup:
 
 class ModelParams(ParamGroup): 
     def __init__(self, parser, sentinel=False):
+        parser.add_argument('--model_path', type=str, default="./output", help="Ruta de salida del modelo")
         self.sh_degree = 3
         self._source_path = ""
         self._model_path = ""
