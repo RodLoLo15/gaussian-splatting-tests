@@ -132,7 +132,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             ssim_value = ssim(image, gt_image)
 
         # Se inserta la incertidumbre U(t)
-        beta = 0.05
+        beta = 0.02
 
         U_t = gaussians.calculate_uncertainty().detach()
         lambda_t = 1 - torch.exp(-beta * U_t)
