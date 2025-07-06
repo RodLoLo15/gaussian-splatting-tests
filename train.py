@@ -331,6 +331,7 @@ if __name__ == "__main__":
     # Gráfica de U(t)
     plt.subplot(1, 2, 1)
     plt.plot(u_t_list, label='U(t)', color='blue')
+    plt.yscale('log')
     plt.xlabel('Iteración')
     plt.ylabel('Incertidumbre U(t)')
     plt.title('Evolución de la incertidumbre')
