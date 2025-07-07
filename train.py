@@ -132,7 +132,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             ssim_value = ssim(image, gt_image)
 
         # Se inserta la incertidumbre U(t)
-        beta = 0.5
+        beta = 0.02
 
         U_t = gaussians.calculate_uncertainty().detach()
         lambda_t = 1 - torch.exp(-beta * U_t)
@@ -305,8 +305,8 @@ if __name__ == "__main__":
     opt = op.extract(args)
     pp_args = pp.extract(args)
 
-    opt.iterations = 5000  # Limita el número de iteraciones reales
-    opt.position_lr_max_steps = 5000  # Asegura que el LR se reduzca correctamente
+    opt.iterations = 30000  # Limita el número de iteraciones reales
+    opt.position_lr_max_steps = 30000  # Asegura que el LR se reduzca correctamente
     args.test_iterations = [opt.iterations]      # Solo evalúa al final
     args.save_iterations = [opt.iterations]      # Solo guarda al final
 
