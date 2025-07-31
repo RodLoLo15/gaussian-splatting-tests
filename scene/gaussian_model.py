@@ -21,6 +21,7 @@ from utils.sh_utils import RGB2SH
 from simple_knn._C import distCUDA2
 from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
+from utils.uncertainty_tracker import EMATracker
 
 try:
     from diff_gaussian_rasterization import SparseGaussianAdam
@@ -60,6 +61,7 @@ class GaussianModel:
         self.max_radii2D = torch.empty(0)
         self.xyz_gradient_accum = torch.empty(0)
         self.denom = torch.empty(0)
+        self.uncertainty_tracker = EMATracker(alpha=0.1)
         self.optimizer = None
         self.percent_dense = 0
         self.spatial_lr_scale = 0
@@ -197,12 +199,20 @@ class GaussianModel:
         mu_rho = torch.mean(density_var)
         sigma_rho = torch.std(density_var)
 
+        # Actualiza y guarda los valores EMA
+        mu_sigma_ema = self.uncertainty_tracker.update('mu_sigma', mu_sigma)
+        sigma_sigma_ema = self.uncertainty_tracker.update('sigma_sigma', sigma_sigma)
+        mu_alpha_ema = self.uncertainty_tracker.update('mu_alpha', mu_alpha)
+        sigma_alpha_ema = self.uncertainty_tracker.update('sigma_alpha', sigma_alpha)
+        mu_rho_ema = self.uncertainty_tracker.update('mu_rho', mu_rho)
+        sigma_rho_ema = self.uncertainty_tracker.update('sigma_rho', sigma_rho)
+
         eps = 1e-6
 
         uncertainty = (1 / scale_norm.shape[0]) * torch.sum(
-            ((scale_norm - mu_sigma) / (sigma_sigma + eps)) +
-            (((1 - opacity) - mu_alpha) / (sigma_alpha + eps)) +
-            ((density_var - mu_rho) / (sigma_rho + eps))
+        ((scale_norm - mu_sigma_ema) / (sigma_sigma_ema + eps)) +
+        (((1 - opacity) - mu_alpha_ema) / (sigma_alpha_ema + eps)) +
+        ((density_var - mu_rho_ema) / (sigma_rho_ema + eps))
         )
 
         return uncertainty
