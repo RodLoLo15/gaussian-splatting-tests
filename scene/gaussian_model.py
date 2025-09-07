@@ -179,40 +179,36 @@ class GaussianModel:
 
     def calculate_uncertainty(self):
         """
-        Calculates a global uncertainty metric U(t) for the whole Gaussian model.
-
-        Returns:
-            torch.Tensor: A single scalar representing global model uncertainty.
+        Calculates a global uncertainty metric U(t) for the Gaussian model.
+        EMA is only applied to the means (mu_sigma, mu_alpha, mu_rho),
+        while standard deviations are computed directly per batch.
         """
-        scaling = self.get_scaling          # (N, 3)
-        opacity = self.get_opacity         # (N, 1)
-        xyz = self.get_xyz                  # (N, 3)
+        scaling = self.get_scaling   # (N, 3)
+        opacity = self.get_opacity   # (N, 1)
+        xyz = self.get_xyz           # (N, 3)
 
+        # ---- Componentes ----
         scale_norm = torch.norm(scaling, dim=1, keepdim=True)  # (N, 1)
-        density_var = torch.var(xyz, dim=0, keepdim=True)       # (1, 3)
-        density_var = density_var.expand(xyz.shape[0], -1)      # (N, 3)
+        density_var = torch.var(xyz, dim=0, keepdim=True)      # (1, 3)
+        density_var = density_var.expand(xyz.shape[0], -1)     # (N, 3)
 
-        mu_sigma = torch.mean(scale_norm)
+        # Medias con EMA
+        mu_sigma_ema = self.uncertainty_tracker.update('mu_sigma', torch.mean(scale_norm))
+        mu_alpha_ema = self.uncertainty_tracker.update('mu_alpha', torch.mean(opacity))
+        mu_rho_ema = self.uncertainty_tracker.update('mu_rho', torch.mean(density_var))
+
+        # Desviaciones estándar directas, sin EMA
         sigma_sigma = torch.std(scale_norm)
-        mu_alpha = torch.mean(opacity)
         sigma_alpha = torch.std(opacity)
-        mu_rho = torch.mean(density_var)
         sigma_rho = torch.std(density_var)
-
-        # Actualiza y guarda los valores EMA
-        mu_sigma_ema = self.uncertainty_tracker.update('mu_sigma', mu_sigma)
-        sigma_sigma_ema = self.uncertainty_tracker.update('sigma_sigma', sigma_sigma)
-        mu_alpha_ema = self.uncertainty_tracker.update('mu_alpha', mu_alpha)
-        sigma_alpha_ema = self.uncertainty_tracker.update('sigma_alpha', sigma_alpha)
-        mu_rho_ema = self.uncertainty_tracker.update('mu_rho', mu_rho)
-        sigma_rho_ema = self.uncertainty_tracker.update('sigma_rho', sigma_rho)
 
         eps = 1e-6
 
+        # ---- Uncertainty ----
         uncertainty = (1 / scale_norm.shape[0]) * torch.sum(
-        ((scale_norm - mu_sigma_ema) / (sigma_sigma_ema + eps)) +
-        (((1 - opacity) - mu_alpha_ema) / (sigma_alpha_ema + eps)) +
-        ((density_var - mu_rho_ema) / (sigma_rho_ema + eps))
+        ((scale_norm - mu_sigma_ema) / (sigma_sigma + eps)) +
+        (((1 - opacity) - mu_alpha_ema) / (sigma_alpha + eps)) +
+        ((density_var - mu_rho_ema) / (sigma_rho + eps))
         )
 
         return uncertainty
