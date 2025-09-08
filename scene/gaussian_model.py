@@ -193,22 +193,24 @@ class GaussianModel:
         density_var = density_var.expand(xyz.shape[0], -1)     # (N, 3)
 
         # Medias con EMA
-        mu_sigma_ema = self.uncertainty_tracker.update('mu_sigma', torch.mean(scale_norm))
-        mu_alpha_ema = self.uncertainty_tracker.update('mu_alpha', torch.mean(opacity))
-        mu_rho_ema = self.uncertainty_tracker.update('mu_rho', torch.mean(density_var))
+        #mu_sigma_ema = self.uncertainty_tracker.update('mu_sigma', torch.mean(scale_norm))
+        #mu_alpha_ema = self.uncertainty_tracker.update('mu_alpha', torch.mean(opacity))
+        #mu_rho_ema = self.uncertainty_tracker.update('mu_rho', torch.mean(density_var))
 
         # Desviaciones estándar directas, sin EMA
+        mu_sigma = torch.mean(scale_norm)
         sigma_sigma = torch.std(scale_norm)
+        mu_alpha = torch.mean(opacity)
         sigma_alpha = torch.std(opacity)
+        mu_rho = torch.mean(density_var)
         sigma_rho = torch.std(density_var)
 
         eps = 1e-6
 
-        # ---- Uncertainty ----
         uncertainty = (1 / scale_norm.shape[0]) * torch.sum(
-        ((scale_norm - mu_sigma_ema) / (sigma_sigma + eps)) +
-        (((1 - opacity) - mu_alpha_ema) / (sigma_alpha + eps)) +
-        ((density_var - mu_rho_ema) / (sigma_rho + eps))
+        ((scale_norm - mu_sigma) / (sigma_sigma + eps)) +
+        (((1 - opacity) - mu_alpha) / (sigma_alpha + eps)) +
+        ((density_var - mu_rho) / (sigma_rho + eps))
         )
 
         return uncertainty
